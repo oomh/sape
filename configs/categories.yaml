@@ -1,0 +1,438 @@
+# M-Pesa Transaction Categories Configuration
+#
+# Edit this file to add/modify transaction categories!
+# Just save and restart the app - no code changes needed.
+
+# ==========================================================================
+# HOW THE APP ENRICHES YOUR DATA
+# ==========================================================================
+#
+# The app intelligently processes M-Pesa transaction details by splitting
+# them into searchable fields. This enrichment happens in TWO stages:
+#
+# STAGE 1: Split Details into TYPE and ENTITY
+# --------------------------------------------
+# M-Pesa formats details as: "Transaction details - Entity details"
+# The app splits on the " - " separator (with spaces).
+#
+# EXAMPLE 1 - Merchant Payment:
+#   Original Details: "Merchant Payment Online to 7359188 - SULTAN DESIGNER PERFUMES"
+#
+#   After Stage 1:
+#     type   → "Merchant Payment Online to 7359188"
+#     entity → "SULTAN DESIGNER PERFUMES"
+#
+# EXAMPLE 2 - Money Received:
+#   Original Details: "Funds received from - 07******611 MICHAEL JAGERO"
+#
+#   After Stage 1:
+#     type   → "Funds received from"
+#     entity → "07******611 MICHAEL JAGERO"
+#
+# STAGE 2: Split TYPE into TYPE_CLASS and TYPE_DESC
+# --------------------------------------------------
+# The 'type' field is further split into:
+#   - type_class: First 4 words (identifies transaction category)
+#   - type_desc: Remaining words (additional context)
+#
+# EXAMPLE 1 - Merchant Payment (continued):
+#   type: "Merchant Payment Online to 7359188"
+#
+#   After Stage 2:
+#     type_class → "Merchant Payment Online to"  (first 4 words)
+#     type_desc  → "7359188"                      (rest)
+#
+# EXAMPLE 2 - Money Received (continued):
+#   type: "Funds received from"
+#
+#   After Stage 2:
+#     type_class → "Funds received from"  (only 3 words, so that's all)
+#     type_desc  → ""                     (empty, no remaining words)
+#
+# FINAL ENRICHED FIELDS (all converted to lowercase):
+# ---------------------------------------------------
+#   - details:    Full original description
+#   - entity:     Who/what was involved in the transaction
+#   - type:       Full transaction type string
+#   - type_class: Transaction category identifier (first 4 words)
+#   - type_desc:  Additional type context (remaining words)
+#
+# WHY THIS MATTERS FOR PATTERN MATCHING:
+# ---------------------------------------
+# - Use 'type_class' to identify transaction categories precisely
+# - Use 'type_desc' to filter by account numbers, till numbers, etc.
+# - Use 'entity' to match specific merchants, people, or services
+# - Use 'details' for broad keyword searches across everything
+#
+# ==========================================================================
+# PATTERN MATCHING: HOW CATEGORIES ARE ASSIGNED
+# ==========================================================================
+#
+# Each category below has 'patterns' that test against the enriched fields.
+# Available pattern operators:
+#
+#   contains: ["text"]         → field contains "text" anywhere
+#   equals: "text"             → field exactly matches "text"
+#   startswith: ["text"]       → field starts with "text"
+#   startswith_numeric: true   → field starts with a digit (0-9)
+#   not_starts_with: "text"    → field does NOT start with "text"
+#
+# MATCHING LOGIC:
+# ---------------
+#   - Multiple values in SAME pattern = OR logic (match ANY)
+#   - Multiple fields specified = AND logic (match ALL)
+#   - Transactions can match MULTIPLE categories
+#   - All matching categories will be applied (not just the first match)
+#   - Each transaction appears in ALL categories whose patterns it matches
+#
+# PATTERN EXAMPLES:
+# -----------------
+# 1. Match money received from individuals:
+#   type_class:
+#     contains: ["funds received from"]
+#   type_desc:
+#     equals: ""  # Empty type_desc = only phone numbers in entity
+#
+# 2. Match PayBill transactions:
+#   details:
+#     contains: ["pay bill"]
+#
+# 3. Match Pochi payments from other businesses:
+#   type_class:
+#     contains: ["small business transfer to"]
+#   type_desc:
+#     contains: ["other small business from"]
+
+categories:
+  # ==========================================================================
+  # INDIVIDUAL TRANSACTIONS (MONEY IN)
+  # ==========================================================================
+
+  - name: "Received (Individuals)"
+    type: "Individual Transactions"
+    description: "Money received from individuals"
+    merchant_type: "Sender"
+    color_map: "Greens"
+    patterns:
+      type_class:
+        contains: ["funds received from"]
+      type_desc:
+        equals: ""  # Matches phone numbers (07xxx, 254xxx, etc.)
+
+  - name: "Received (Business)"
+    type: "Individual Transactions"
+    description: "Money received from businesses/institutions"
+    merchant_type: "Business"
+    color_map: "Greens"
+    patterns:
+      type_class:
+        contains:
+          - "merchant customer payment from"
+          - "salary payment from"
+          - "promotion payment from"
+          - "business payment from"
+          - "funds received from business"
+
+  - name: "Deposit"
+    type: "Individual Transactions"
+    description: "Deposits to M-Pesa account"
+    merchant_type: "Source"
+    color_map: "Greens"
+    patterns:
+      details:
+        contains: ["deposit of"]
+
+  # ==========================================================================
+  # INDIVIDUAL TRANSACTIONS (MONEY OUT)
+  # ==========================================================================
+
+  - name: "Send Money"
+    type: "Individual Transactions"
+    description: "Money sent to other people"
+    merchant_type: "Recipient"
+    color_map: "Reds"
+    patterns:
+      details:
+        contains:
+          - "customer transfer to"
+          - "customer transfer fuliza"
+          - "customer transfer of funds" 
+
+  - name: "Withdrawal"
+    type: "Individual Transactions"
+    description: "Cash withdrawals from agents"
+    merchant_type: "Agent"
+    color_map: "Blues"
+    patterns:
+      details:
+        contains: ["withdrawal"]
+      type_desc:
+        not_starts_with: "from"  # Exclude "withdrawal from X" patterns
+
+  # ==========================================================================
+  # LIPA NA M-PESA (MONEY OUT)
+  # ==========================================================================
+
+  - name: "BuyGoods"
+    type: "Lipa Na M-pesa"
+    description: "Payments to merchants (Buy Goods)"
+    merchant_type: "Merchant"
+    color_map: "Oranges"
+    patterns:
+      details:
+        contains:
+          - "merchant payment"
+          - "pay merchant"
+
+  - name: "PayBill"
+    type: "Lipa Na M-pesa"
+    description: "Bill payments (utilities, services)"
+    merchant_type: "Biller"
+    color_map: "Purples"
+    patterns:
+      details:
+        contains: ["pay bill"]
+
+  - name: "Pochi"
+    type: "Lipa Na M-pesa"
+    description: "Pochi La Biashara payments"
+    merchant_type: "Business"
+    color_map: "Reds"
+    patterns:
+      details:
+        contains:
+              - "customer payment to small business to"
+              - "customer send money to micro sme business"
+              - "customer send money to micro sme business with fuliza mpesa to"
+
+  # ==========================================================================
+  # Pochi Wallet
+  # ==========================================================================
+
+  - name: "Customer Payment"
+    type: "Pochi Wallet"
+    description: "Pochi La Biashara payments received"
+    merchant_type: "Customer"
+    color_map: "Greens"
+    patterns:
+      details:
+        contains:
+          - "customer payment to small business from"
+          - "customer send money to micro sme business received from"
+
+
+  - name: "Business Transfer (Customer)"
+    type: "Pochi Wallet"
+    description: "Business payments to customers"
+    merchant_type: "Customer"
+    color_map: "Reds"
+    patterns:
+      details:
+        contains: 
+            - "small business transfer to other small business to"
+            - "small business payment to"
+            - "Customer Send Money to	Micro SME Business with Fuliza MPesa to"
+
+  - name: "Business Transfer (from other SME)"
+    type: "Pochi Wallet"
+    description: "Business payments from other SMEs"
+    merchant_type: "Business"
+    color_map: "Greens"
+    patterns:
+        details:
+          contains:
+            - "small business transfer to other small business from"
+            
+
+  - name: "Business Transfer (to other SME)"
+    type: "Pochi Wallet"
+    description: "Business payments from other SMEs"
+    merchant_type: "Business"
+    color_map: "Greens"
+    patterns:
+      type_class:
+        contains: ["small business transfer to"]
+      type_desc:
+        contains: ["other small business to", ]
+      
+
+  # ==========================================================================
+  # MISC (VARIOUS)
+  # ==========================================================================
+
+  - name: "Reversals"
+    type: "Misc"
+    description: "Reversed transactions"
+    merchant_type: "Source"
+    color_map: "Greens"
+    patterns:
+      details:
+        contains: ["reversal"]
+
+  - name: "Hustler Fund"
+    type: "Misc"
+    description: "Hustler Fund transactions"
+    merchant_type: "Transaction"
+    color_map: "Greens"
+    patterns:
+      details:
+        contains: ["term loan"]
+
+  - name: "KCB"
+    type: "Misc"
+    description: "KCB M-Pesa transactions"
+    merchant_type: "Transaction"
+    color_map: "Greens"
+    patterns:
+      details:
+        contains: ["kcb m-pesa"]
+
+  - name: "MShwari"
+    type: "Misc"
+    description: "M-Shwari transactions"
+    merchant_type: "Transaction"
+    color_map: "Greens"
+    patterns:
+      details:
+        contains: ["m-shwari"]
+
+  - name: "Overdraft"
+    type: "Misc"
+    description: "Overdraft transactions"
+    merchant_type: "Transaction"
+    color_map: "Reds"
+    patterns:
+      details:
+        contains:
+          - "overdraft"
+          - "od loan"
+
+  - name: "airtime_bundle"
+    type: "Misc"
+    description: "Airtime and data bundles"
+    merchant_type: "Service"
+    color_map: "Reds"
+    patterns:
+      details:
+        contains: ["airtime", "bundle"]
+
+  # ==========================================================================
+  # CUSTOM CATEGORIES
+  # Add your own categories below!
+  # ==========================================================================
+  #
+  # Example - Track Netflix subscriptions:
+  # - name: "Netflix"
+  #   type: "Subscriptions"
+  #   description: "Netflix subscription"
+  #   merchant_type: "Service"
+  #   color_map: "Reds"
+  #   patterns:
+  #     details:
+  #       contains: ["pay bill"]
+  #     entity:
+  #       contains: ["netflix"]
+  #
+  # Example - Track salary:
+  # - name: "MySalary"
+  #   type: "Income"
+  #   description: "Monthly salary"
+  #   merchant_type: "Employer"
+  #   color_map: "Greens"
+  #   patterns:
+  #     type_class:
+  #       contains: ["salary payment from"]
+  #     entity:
+  #       contains: ["acme corp"]
+
+# ==========================================================================
+# SPECIAL CATEGORIES (used internally - don't modify)
+# ==========================================================================
+
+special:
+  no_details: "NoDetails"
+  uncategorized: "uncategorized"
+
+
+# ==========================================================================
+# CUSTOM CATEGORY GROUPS
+# ==========================================================================
+#
+# WHAT ARE CATEGORY GROUPS?
+# --------------------------
+# Category groups allow you to organize related categories together for
+# higher-level analysis. The 'type' field in each category definition
+# determines which group it belongs to.
+#
+# BUILT-IN GROUPS:
+# ----------------
+# The app comes with these predefined groups (see 'type' field above):
+#   - "Individual Transactions" → Send/receive money, deposits, withdrawals
+#   - "Lipa Na M-pesa"          → BuyGoods, PayBill, Pochi payments
+#   - "Pochi Wallet"  → Pochi business transactions
+#   - "Misc"                    → Reversals, loans, airtime, etc.
+#
+# HOW GROUPS WORK IN THE APP:
+# ----------------------------
+# 1. Each category's 'type' field assigns it to a group
+# 2. The app uses groups for:
+#    - High-level financial summaries (total per group)
+#    - Grouping visualizations in charts/graphs
+#    - Filtering transactions by business category
+#    - Creating custom reports and dashboards
+#
+# CREATING YOUR OWN GROUPS:
+# --------------------------
+# Simply set the 'type' field when defining custom categories!
+#
+# EXAMPLE - Track all subscription services:
+#   - name: "Netflix"
+#     type: "Subscriptions"        ← Custom group name
+#     description: "Netflix subscription"
+#     merchant_type: "Service"
+#     color_map: "Reds"
+#     patterns:
+#       entity:
+#         contains: ["netflix"]
+#
+#   - name: "Spotify"
+#     type: "Subscriptions"        ← Same group
+#     description: "Spotify subscription"
+#     merchant_type: "Service"
+#     color_map: "Reds"
+#     patterns:
+#       entity:
+#         contains: ["spotify"]
+#
+# EXAMPLE - Track income sources:
+#   - name: "Freelance Income"
+#     type: "Income"               ← Custom group name
+#     description: "Freelance payments"
+#     merchant_type: "Client"
+#     color_map: "Greens"
+#     patterns:
+#       type_class:
+#         contains: ["merchant customer payment from"]
+#       entity:
+#         contains: ["upwork", "fiverr"]
+#
+#   - name: "Salary"
+#     type: "Income"               ← Same group
+#     description: "Monthly salary"
+#     merchant_type: "Employer"
+#     color_map: "Greens"
+#     patterns:
+#       type_class:
+#         contains: ["salary payment from"]
+#
+# BEST PRACTICES:
+# ---------------
+# 1. Use descriptive group names (e.g., "Subscriptions" not "Sub")
+# 2. Keep related categories in the same group
+# 3. Use consistent color_map within a group for better visualizations
+# 4. Document your custom groups in comments above
+#
+# ==========================================================================
+
+# Add your custom categories below - they'll automatically create new groups!
+# (Or add to existing groups by using the same 'type' value)

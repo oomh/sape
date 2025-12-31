@@ -1,0 +1,50 @@
+__pycache__/
+*.py[cod]
+*.pyc
+vendor/
+.vscode/
+blackbox/
+*.swp
+.Trashes
+.env
+.venv/
+venv/
+env/
+ENV/
+tmp/
+temp/
+README_files/
+box/
+requirements-dev.txt
+logs/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# MyPy
+.mypy_cache/
+
+# IDEs
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+
+# Logs
+*.log

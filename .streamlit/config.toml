@@ -1,0 +1,20 @@
+[theme]
+base = "dark"
+
+[browser]
+# usage statistics collection false for privacy
+gatherUsageStats = false
+
+
+[runner]
+# magic commands (e.g., displaying variables by typing their name)
+magicEnabled = true
+
+# Make reruns more responsive to user interaction
+fastReruns = true
+
+[server]
+# CORS protection for security
+enableCORS = true
+# XSRF protection for security
+enableXsrfProtection = true
