@@ -100,16 +100,15 @@ def get_pdf_hash(pdf_file) -> str | None:
 # HEADER
 # ============================================================================
 
-with st.container():
-    st.markdown(
-        """
-        <div style="text-align: center; padding: 1rem 0 0.5rem;">
-            <h1 style="font-size: 2.5rem; margin-bottom: 0.2rem;">📱 MpesaLens</h1>
-            <p style="font-size: 1rem; color: gray;">Understand where your M-Pesa money goes</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    
+st.image(
+    "src/ui/img/batch_banner.png",
+    width="content",
+)
+st.logo(
+    "src/ui/img/batch_logo.png", 
+    size = "large",
+)
 
 # ============================================================================
 # FILE UPLOAD
