@@ -10,16 +10,24 @@ from pathlib import Path
 from typing import Optional, Tuple, Dict, List
 import yaml
 import hashlib
+import plotly.graph_objects as go
+
 
 from configs import setup_logging, get_logger
 from src.data import tabula_load_pdf_data, clean_data
 from src.categorization import TransactionCategorizer
 from src.analysis import Analyzer
 from src.ui import display_category_tab, display_error_state, display_empty_state
+from src.ui.components import display_transaction_type_overview
+
+
+import plotly.colors as pc
+
 
 # Setup logging
 setup_logging()
 logger = get_logger(__name__)
+PALETTES = {}  
 
 # ============================================================================
 # PAGE CONFIGURATION
@@ -103,7 +111,7 @@ def get_pdf_hash(pdf_file) -> str | None:
     
 st.image(
     "src/ui/img/batch_banner.png",
-    width="content",
+    width="stretch"
 )
 st.logo(
     "src/ui/img/batch_logo.png", 
@@ -764,88 +772,13 @@ if not type_groups:
     st.warning("No categorized transactions found.")
     st.stop()
 
-# ============================================================================
-# SUMMARY SECTION - TYPE OVERVIEW WITH DONUT CHARTS
-# ============================================================================
+    # ============================================================================
+    # SUMMARY SECTION - TYPE OVERVIEW WITH STACKED BAR CHARTS
+    # ============================================================================
 
-st.header("📊 Transaction Type Overview")
 
-# Create 2 columns for the transaction type metrics
-cols = st.columns(2)
 
-for idx, (type_name, categories) in enumerate(type_groups.items()):
-    # Calculate total amount for each category in this type
-    category_totals = []
-    category_names = []
-    total_transactions = 0
-    all_transactions = []
-
-    for category_name in categories:
-        result = analysis_results[category_name]
-        total = result.total_amount
-        total_transactions += result.transaction_count
-
-        if total != 0:  # Only include categories with transactions
-            category_totals.append(abs(total))
-            category_names.append(category_name)
-
-        # Collect all transactions with their dates
-        if not result.raw_df.empty and "completiontime" in result.raw_df.columns:
-            all_transactions.append(result.raw_df[["completiontime"]])
-
-    # Skip this type if it has no data
-    if not category_totals:
-        continue
-
-    with cols[idx % 2]:
-        if category_totals:
-            # Styled title with underline
-            st.header(f"{type_name}", divider="orange")
-
-            # Create donut chart
-            import plotly.graph_objects as go
-
-            fig = go.Figure(
-                data=[
-                    go.Pie(
-                        labels=category_names,
-                        values=category_totals,
-                        hole=0.4,
-                        textinfo="none",
-                        texttemplate="<b>%{label}</b><br>Ksh. %{value:,.0f}<br>%{percent:.0%}",
-                        textposition="inside",
-                        insidetextorientation="horizontal",
-                        hovertemplate="<b>%{label}</b><br>KES %{value:,.0f}<br>%{percent:.0%}<br><extra></extra>",
-                    )
-                ]
-            )
-
-            fig.update_layout(
-                showlegend=False,
-                legend=dict(
-                    orientation="h",
-                    xanchor="center",
-                    x=0.5,
-                    font=dict(size=9),
-                ),
-                height=600,
-                margin=dict(l=10, r=10, t=10, b=60),
-            )
-
-            st.plotly_chart(fig)
-
-            # Display metrics
-            metric1, metric2 = st.columns(2)
-
-            with metric1:
-                st.metric("Total Transactions", f"{total_transactions:,}")
-
-        else:
-            st.markdown(
-                f"<h4 style='text-align: center; text-decoration: underline;'>{type_name}</h4>",
-                unsafe_allow_html=True,
-            )
-            st.info("No transactions")
+display_transaction_type_overview(type_groups, analysis_results)
 
 st.divider()
 
@@ -853,7 +786,6 @@ st.divider()
 # DETAILED SECTIONS BY TYPE
 # ============================================================================
 
-st.header("📈 Detailed Analysis by Type")
 
 # Display each type as a separate section
 for type_name, categories in type_groups.items():

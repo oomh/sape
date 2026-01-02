@@ -1,3 +1,96 @@
+def display_transaction_type_overview(type_groups, analysis_results):
+    """
+    Display the Transaction Type Overview as stacked percent bars using Plotly built-in palettes.
+    Args:
+        type_groups: dict mapping type_name to list of category names
+        analysis_results: dict mapping category_name to analysis result (with .total_amount, .transaction_count)
+    """
+    import streamlit as st
+    import plotly.graph_objects as go
+    import plotly.colors as pc
+
+    # st.header("📊 Transaction Type Overview")
+    x = 1
+    cols = st.columns(x)
+
+    for idx, (type_name, categories) in enumerate(type_groups.items()):
+        category_totals = []
+        category_names = []
+        category_transactions = []
+        total_transactions = 0
+
+        for category_name in categories:
+            result = analysis_results[category_name]
+            total = result.total_amount
+            transaction_count = result.transaction_count
+            total_transactions += transaction_count
+
+            if total != 0:
+                category_totals.append(abs(total))
+                category_names.append(category_name)
+                category_transactions.append(transaction_count)
+
+        if not category_totals:
+            continue
+
+        # Sort by amount descending for consistent ordering (bars and legend)
+        sorted_indices = sorted(range(len(category_totals)), key=lambda i: category_totals[i], reverse=True)
+        category_totals = [category_totals[i] for i in sorted_indices]
+        category_names = [category_names[i] for i in sorted_indices]
+        category_transactions = [category_transactions[i] for i in sorted_indices]
+
+        with cols[idx % x]:
+            # st.header(f"{type_name}", divider="orange")
+            total_amount = sum(category_totals)
+            if total_amount == 0:
+                st.info("No transactions")
+                continue
+            percentages = [(v / total_amount) * 100 for v in category_totals]
+            color_seq = pc.qualitative.Plotly
+            colors = [color_seq[i % len(color_seq)] for i in range(len(category_names))]
+            fig = go.Figure()
+            for i, name in enumerate(category_names):
+                pct = percentages[i]
+                fig.add_trace(
+                    go.Bar(
+                        y=[""],
+                        x=[pct],
+                        name=f"{name} ({pct:.1f}%)",
+                        orientation="h",
+                        marker=dict(color=colors[i]),
+                        hovertemplate=(
+                            f"<b>{name}</b><br>Txns: {category_transactions[i]:,}<br>"
+                            f"KES {category_totals[i]:,.0f}<br>{pct:.1f}%<extra></extra>"
+                        ),
+                        legendwidth=160,
+                    )
+                )
+            fig.update_layout(
+                barmode="stack",
+                height=120,
+                margin=dict(l=5, r=5, t=5, b=40),
+                xaxis=dict(showgrid=False, showticklabels=False, range=[0, 100]),
+                yaxis=dict(showticklabels=False),
+                legend=dict(
+                    orientation="h",
+                    y=-0.5,
+                    x=0.5,
+                    xanchor="center",
+                    yanchor="top",
+                    valign="bottom",
+                    title_text="",
+                    itemsizing="trace",
+                    borderwidth=0,
+                ),
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                dragmode=False,
+            )
+            st.divider()  # Streamlit accent-colored divider
+            st.caption(f"{type_name}: — KES {total_amount:,.0f} — {int(total_transactions):,} transactions")
+            st.plotly_chart(fig)
+            
+
 """
 UI Components Module for M-Pesalytics v2
 

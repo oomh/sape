@@ -165,6 +165,7 @@ def _clean_column_values(df: pd.DataFrame) -> pd.DataFrame:
     if "receiptno." in df.columns:
         df = df.rename(columns={"receiptno.": "receiptno"})
 
+    # Saw this error in aroound 40% of the statements i worked with
     if "withdraw\nn" in df.columns:
         df = df.rename(columns={"withdraw\nn": "withdrawn"})
 
@@ -234,6 +235,9 @@ def _clean_column_values(df: pd.DataFrame) -> pd.DataFrame:
     # cleaning details text (collapsing multiple spaces into single space)
     if "details" in df.columns:
         df["details"] = df["details"].astype(str).str.replace(r"\s+", " ", regex=True)
+        
+        # Proper capitalization of details: first letter uppercase, rest lowercase
+        df["details"] = df["details"].str.title()
 
     return df
 
