@@ -41,6 +41,7 @@ htmlcov/
 # OS files
 .DS_Store
 Thumbs.db
+sape_box/
 
 # Jupyter
 .ipynb_checkpoints/

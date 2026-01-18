@@ -96,6 +96,7 @@ class Analyzer:
             .reset_index()
         )
 
+#*! Replace this with st.cards (Entity + Count)
         # Create chart
         fig = create_horizontal_bar_chart(
             data=aggregated,

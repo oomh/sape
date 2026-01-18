@@ -9,7 +9,6 @@ def display_transaction_type_overview(type_groups, analysis_results):
     import plotly.graph_objects as go
     import plotly.colors as pc
 
-    # st.header("📊 Transaction Type Overview")
     x = 1
     cols = st.columns(x)
 
@@ -34,7 +33,7 @@ def display_transaction_type_overview(type_groups, analysis_results):
             continue
 
         # Sort by amount descending for consistent ordering (bars and legend)
-        sorted_indices = sorted(range(len(category_totals)), key=lambda i: category_totals[i], reverse=True)
+        sorted_indices = sorted(range(len(category_totals)), key=lambda i: category_totals[i], reverse=False)
         category_totals = [category_totals[i] for i in sorted_indices]
         category_names = [category_names[i] for i in sorted_indices]
         category_transactions = [category_transactions[i] for i in sorted_indices]
@@ -62,25 +61,25 @@ def display_transaction_type_overview(type_groups, analysis_results):
                             f"<b>{name}</b><br>Txns: {category_transactions[i]:,}<br>"
                             f"KES {category_totals[i]:,.0f}<br>{pct:.1f}%<extra></extra>"
                         ),
-                        legendwidth=160,
+                        # legendwidth=160,
                     )
                 )
             fig.update_layout(
                 barmode="stack",
-                height=120,
-                margin=dict(l=5, r=5, t=5, b=40),
+                height=200,
+                margin=dict(l=5, r=5, t=5, b=80),
                 xaxis=dict(showgrid=False, showticklabels=False, range=[0, 100]),
                 yaxis=dict(showticklabels=False),
                 legend=dict(
-                    orientation="h",
+                    orientation="v",
                     y=-0.5,
                     x=0.5,
+                    xref="paper",
                     xanchor="center",
+                    yref="paper",
                     yanchor="top",
-                    valign="bottom",
-                    title_text="",
-                    itemsizing="trace",
-                    borderwidth=0,
+                    traceorder="normal",
+                    maxheight=200,
                 ),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
